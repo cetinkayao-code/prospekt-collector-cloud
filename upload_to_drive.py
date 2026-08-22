@@ -78,27 +78,51 @@ def main():
 
     uploaded = 0
     skipped = 0
+    failed = 0
+    failed_files = []
 
     for brand_dir in sorted(p for p in OUTPUT_DIR.iterdir() if p.is_dir()):
         pdfs = sorted(brand_dir.glob("*.pdf"))
         if not pdfs:
             continue
 
-        brand_folder_id = find_or_create_subfolder(service, root_folder_id, brand_dir.name)
+        try:
+            brand_folder_id = find_or_create_subfolder(service, root_folder_id, brand_dir.name)
+        except Exception as e:
+            failed += len(pdfs)
+            failed_files.append(f"{brand_dir.name}: klasör oluşturulamadı - {type(e).__name__}: {e}")
+            print(f"[{brand_dir.name}] KLASÖR HATASI: {e}")
+            continue
 
         for pdf in pdfs:
-            if file_exists_in_folder(service, brand_folder_id, pdf.name):
-                print(f"[{brand_dir.name}] ZATEN DRIVE'DA VAR: {pdf.name}")
-                skipped += 1
-                continue
+            try:
+                if file_exists_in_folder(service, brand_folder_id, pdf.name):
+                    print(f"[{brand_dir.name}] ZATEN DRIVE'DA VAR: {pdf.name}")
+                    skipped += 1
+                    continue
 
-            print(f"[{brand_dir.name}] YÜKLENİYOR: {pdf.name}")
-            upload_file(service, brand_folder_id, pdf)
-            uploaded += 1
+                print(f"[{brand_dir.name}] YÜKLENİYOR: {pdf.name}")
+                upload_file(service, brand_folder_id, pdf)
+                uploaded += 1
+            except Exception as e:
+                failed += 1
+                failed_files.append(f"{brand_dir.name}/{pdf.name}: {type(e).__name__}: {e}")
+                print(f"[{brand_dir.name}] YÜKLEME HATASI ({pdf.name}): {e}")
+
+    report = {
+        "uploaded": uploaded,
+        "skipped": skipped,
+        "failed": failed,
+        "failed_files": failed_files,
+    }
+    (BASE_DIR / "drive_report.json").write_text(
+        json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
 
     print()
     print(f"Drive'a yüklenen : {uploaded}")
     print(f"Zaten mevcut     : {skipped}")
+    print(f"Hatalı           : {failed}")
 
 
 if __name__ == "__main__":

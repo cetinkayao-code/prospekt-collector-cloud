@@ -589,6 +589,7 @@ def main():
     downloaded = 0
     skipped = 0
     failed = 0
+    failed_brands = []
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=HEADLESS)
@@ -608,6 +609,7 @@ def main():
 
             except Exception as e:
                 failed += 1
+                failed_brands.append(f"{brand}: {type(e).__name__}: {e}")
                 print(f"[{brand}] HATA: {type(e).__name__}: {e}")
 
             print()
@@ -615,6 +617,16 @@ def main():
         browser.close()
 
     save_manifest(manifest)
+
+    report = {
+        "downloaded": downloaded,
+        "skipped": skipped,
+        "failed": failed,
+        "failed_brands": failed_brands,
+    }
+    (BASE_DIR / "collector_report.json").write_text(
+        json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
+    )
 
     print("=" * 70)
     print("FINAL SONUÇ")
