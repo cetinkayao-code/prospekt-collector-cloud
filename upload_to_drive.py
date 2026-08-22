@@ -30,6 +30,8 @@ def get_drive_service():
         print("HATA: GDRIVE_SERVICE_ACCOUNT_JSON veya GDRIVE_FOLDER_ID tanımlı değil.")
         sys.exit(1)
 
+    # Bazı ortamlarda secret değeri baştaki UTF-8 BOM ile geliyor; temizle.
+    raw = raw.encode("utf-8").decode("utf-8-sig")
     info = json.loads(raw)
     creds = service_account.Credentials.from_service_account_info(info, scopes=SCOPES)
     service = build("drive", "v3", credentials=creds)
