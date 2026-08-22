@@ -4,9 +4,16 @@ FINAL_PROSPEKTE altındaki PDF'leri Google Drive'daki paylaşılan klasöre yük
 Her marka için Drive'da (yoksa oluşturarak) aynı isimde bir alt klasör kullanır.
 Aynı isimde dosya zaten varsa tekrar yüklemez.
 
+Kişisel/ücretsiz Gmail hesaplarında servis hesaplarının kendi depolama kotası
+olmadığı için (bkz. Google'ın "Service Accounts do not have storage quota" hatası),
+kullanıcının kendi hesabı adına, bir kereliğine alınmış bir OAuth refresh token
+ile yükleme yapılır (bkz. get_refresh_token.py - yerelde tek seferlik çalıştırılır).
+
 Ortam değişkenleri:
-  GDRIVE_SERVICE_ACCOUNT_JSON - servis hesabı anahtarının JSON içeriği (tamamı)
-  GDRIVE_FOLDER_ID            - hedef Drive klasörünün ID'si
+  GDRIVE_OAUTH_CLIENT_ID     - OAuth istemci ID'si
+  GDRIVE_OAUTH_CLIENT_SECRET - OAuth istemci sırrı
+  GDRIVE_OAUTH_REFRESH_TOKEN - kullanıcı hesabı adına alınmış refresh token
+  GDRIVE_FOLDER_ID           - hedef Drive klasörünün ID'si
 """
 
 from pathlib import Path
@@ -14,7 +21,8 @@ import json
 import os
 import sys
 
-from google.oauth2 import service_account
+from google.auth.transport.requests import Request
+from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 
@@ -23,18 +31,37 @@ BASE_DIR = Path(__file__).resolve().parent
 OUTPUT_DIR = BASE_DIR / "FINAL_PROSPEKTE"
 
 
+def clean_env(name):
+    """Ortam değişkenini okur, olası UTF-8 BOM ve baştaki/sondaki boşlukları temizler."""
+    raw = os.environ.get(name)
+    if raw is None:
+        return None
+    return raw.encode("utf-8").decode("utf-8-sig").strip()
+
+
 def get_drive_service():
-    raw = os.environ.get("GDRIVE_SERVICE_ACCOUNT_JSON")
-    folder_id = os.environ.get("GDRIVE_FOLDER_ID")
-    if not raw or not folder_id:
-        print("HATA: GDRIVE_SERVICE_ACCOUNT_JSON veya GDRIVE_FOLDER_ID tanımlı değil.")
+    client_id = clean_env("GDRIVE_OAUTH_CLIENT_ID")
+    client_secret = clean_env("GDRIVE_OAUTH_CLIENT_SECRET")
+    refresh_token = clean_env("GDRIVE_OAUTH_REFRESH_TOKEN")
+    folder_id = clean_env("GDRIVE_FOLDER_ID")
+
+    if not all([client_id, client_secret, refresh_token, folder_id]):
+        print(
+            "HATA: GDRIVE_OAUTH_CLIENT_ID, GDRIVE_OAUTH_CLIENT_SECRET, "
+            "GDRIVE_OAUTH_REFRESH_TOKEN veya GDRIVE_FOLDER_ID tanımlı değil."
+        )
         sys.exit(1)
 
-    # Bazı ortamlarda secret değeri baştaki UTF-8 BOM ile geliyor; temizle.
-    raw = raw.encode("utf-8").decode("utf-8-sig")
-    folder_id = folder_id.encode("utf-8").decode("utf-8-sig").strip()
-    info = json.loads(raw)
-    creds = service_account.Credentials.from_service_account_info(info, scopes=SCOPES)
+    creds = Credentials(
+        None,
+        refresh_token=refresh_token,
+        token_uri="https://oauth2.googleapis.com/token",
+        client_id=client_id,
+        client_secret=client_secret,
+        scopes=SCOPES,
+    )
+    creds.refresh(Request())
+
     service = build("drive", "v3", credentials=creds)
     return service, folder_id
 
