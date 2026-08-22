@@ -64,10 +64,18 @@ def build_body(collector_report, drive_report):
     return "\n".join(lines)
 
 
+def clean_env(name):
+    """Ortam değişkenini okur, olası UTF-8 BOM ve baştaki/sondaki boşlukları temizler."""
+    raw = os.environ.get(name)
+    if raw is None:
+        return None
+    return raw.encode("utf-8").decode("utf-8-sig").strip()
+
+
 def main():
-    gmail_address = os.environ.get("GMAIL_ADDRESS")
-    gmail_password = os.environ.get("GMAIL_APP_PASSWORD")
-    report_to = os.environ.get("REPORT_EMAIL_TO")
+    gmail_address = clean_env("GMAIL_ADDRESS")
+    gmail_password = clean_env("GMAIL_APP_PASSWORD")
+    report_to = clean_env("REPORT_EMAIL_TO")
 
     if not gmail_address or not gmail_password or not report_to:
         print("HATA: GMAIL_ADDRESS, GMAIL_APP_PASSWORD veya REPORT_EMAIL_TO tanımlı değil.")

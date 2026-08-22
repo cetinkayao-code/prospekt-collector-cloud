@@ -32,6 +32,7 @@ def get_drive_service():
 
     # Bazı ortamlarda secret değeri baştaki UTF-8 BOM ile geliyor; temizle.
     raw = raw.encode("utf-8").decode("utf-8-sig")
+    folder_id = folder_id.encode("utf-8").decode("utf-8-sig").strip()
     info = json.loads(raw)
     creds = service_account.Credentials.from_service_account_info(info, scopes=SCOPES)
     service = build("drive", "v3", credentials=creds)
