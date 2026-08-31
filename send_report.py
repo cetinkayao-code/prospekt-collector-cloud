@@ -60,9 +60,13 @@ def build_body(collector_report, release_report):
         for line in release_report.get("failed_files", []):
             lines.append(f"  - {line}")
 
+        if release_report.get("zip_url"):
+            lines.append("")
+            lines.append(f"TUMUNU TEK SEFERDE INDIR (zip): {release_report['zip_url']}")
+
         if release_report.get("release_url"):
             lines.append("")
-            lines.append(f"Tum dosyalar: {release_report['release_url']}")
+            lines.append(f"Tum dosyalar (release sayfasi): {release_report['release_url']}")
 
         downloads = release_report.get("downloads", [])
         if downloads:

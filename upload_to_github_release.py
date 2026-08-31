@@ -18,6 +18,7 @@ from pathlib import Path
 from datetime import datetime, timezone, timedelta
 import json
 import os
+import zipfile
 import sys
 
 import requests
@@ -84,14 +85,14 @@ def upload_asset(repo, upload_url_template, token, asset_name, path, existing_as
 
     upload_url = upload_url_template.split("{")[0]
     headers = api_headers(token)
-    headers["Content-Type"] = "application/pdf"
+    headers["Content-Type"] = "application/zip" if path.suffix == ".zip" else "application/pdf"
     with open(path, "rb") as f:
         resp = requests.post(
             upload_url,
             headers=headers,
             params={"name": asset_name},
             data=f,
-            timeout=120,
+            timeout=300,
         )
     resp.raise_for_status()
     return resp.json()
@@ -149,7 +150,7 @@ def main():
     if not OUTPUT_DIR.exists():
         print("FINAL_PROSPEKTE klasörü yok, yüklenecek bir şey bulunamadı.")
         report = {"uploaded": 0, "skipped": 0, "failed": 0, "failed_files": [],
-                   "release_url": None, "downloads": []}
+                   "release_url": None, "zip_url": None, "downloads": []}
         (BASE_DIR / "github_release_report.json").write_text(
             json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
         )
@@ -202,6 +203,26 @@ def main():
                         failed_files.append(f"{brand_dir.name}/{pdf.name}: {type(e).__name__}: {e}")
                         print(f"[{brand_dir.name}] YÜKLEME HATASI ({pdf.name}): {e}")
 
+    zip_url = None
+    if pdf_count > 0 and upload_url_template:
+        zip_name = f"Tum_Prospektler_{today.strftime('%Y-%m-%d')}.zip"
+        zip_path = BASE_DIR / zip_name
+        try:
+            with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
+                for brand_dir in brand_dirs:
+                    for pdf in sorted(brand_dir.glob("*.pdf")):
+                        zf.write(pdf, arcname=f"{brand_dir.name}/{pdf.name}")
+
+            print(f"TÜMÜ ZİP OLARAK YÜKLENİYOR: {zip_name}")
+            asset = upload_asset(repo, upload_url_template, token, zip_name, zip_path, existing_assets)
+            zip_url = asset["browser_download_url"]
+        except Exception as e:
+            failed += 1
+            failed_files.append(f"tumu.zip: {type(e).__name__}: {e}")
+            print(f"ZİP YÜKLEME HATASI: {e}")
+        finally:
+            zip_path.unlink(missing_ok=True)
+
     try:
         deleted = cleanup_old_releases(repo, token, retention_weeks)
         if deleted:
@@ -215,6 +236,7 @@ def main():
         "failed": failed,
         "failed_files": failed_files,
         "release_url": release_url,
+        "zip_url": zip_url,
         "downloads": downloads,
     }
     (BASE_DIR / "github_release_report.json").write_text(
