@@ -68,8 +68,11 @@ def build_body(collector_report, release_report):
         if downloads:
             lines.append("")
             lines.append("Dogrudan indirme linkleri:")
-            for item in downloads:
-                lines.append(f"  - [{item['brand']}] {item['filename']}: {item['url']}")
+            lines.append("")
+            for item in sorted(downloads, key=lambda d: d["brand"]):
+                lines.append(item["brand"])
+                lines.append(f"  {item['url']}")
+                lines.append("")
 
     return "\n".join(lines)
 
