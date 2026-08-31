@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Toplama + Drive yükleme sonuçlarını özetleyip Gmail SMTP üzerinden e-posta gönderir.
-collector.py'nin ürettiği collector_report.json ve upload_to_drive.py'nin ürettiği
-drive_report.json dosyalarını okur. Biri veya ikisi de yoksa "çalışmadı" olarak işaretler
-(örn. collector.py hiç bitmeden çökerse).
+Toplama + GitHub Release yükleme sonuçlarını özetleyip Gmail SMTP üzerinden e-posta gönderir.
+collector.py'nin ürettiği collector_report.json ve upload_to_github_release.py'nin ürettiği
+github_release_report.json dosyalarını okur. Biri veya ikisi de yoksa "çalışmadı" olarak
+işaretler (örn. collector.py hiç bitmeden çökerse).
 
 Ortam değişkenleri:
   GMAIL_ADDRESS       - gönderen Gmail adresi
@@ -34,7 +34,7 @@ def load_json(name):
         return None
 
 
-def build_body(collector_report, drive_report):
+def build_body(collector_report, release_report):
     lines = []
     now_tr = datetime.now(TR_TZ).strftime("%d-%m-%Y %H:%M")
     lines.append(f"Prospekt Collector calisma raporu - {now_tr} (TR saati)")
@@ -51,15 +51,25 @@ def build_body(collector_report, drive_report):
             lines.append(f"  - {line}")
     lines.append("")
 
-    lines.append("== Google Drive'a yukleme ==")
-    if drive_report is None:
+    lines.append("== GitHub Release'e yukleme ==")
+    if release_report is None:
         lines.append("Rapor bulunamadi - yukleme adimi hic calismamis olabilir.")
     else:
-        lines.append(f"Yuklenen   : {drive_report['uploaded']}")
-        lines.append(f"Zaten vardi: {drive_report['skipped']}")
-        lines.append(f"Hatali     : {drive_report['failed']}")
-        for line in drive_report.get("failed_files", []):
+        lines.append(f"Yuklenen : {release_report['uploaded']}")
+        lines.append(f"Hatali   : {release_report['failed']}")
+        for line in release_report.get("failed_files", []):
             lines.append(f"  - {line}")
+
+        if release_report.get("release_url"):
+            lines.append("")
+            lines.append(f"Tum dosyalar: {release_report['release_url']}")
+
+        downloads = release_report.get("downloads", [])
+        if downloads:
+            lines.append("")
+            lines.append("Dogrudan indirme linkleri:")
+            for item in downloads:
+                lines.append(f"  - [{item['brand']}] {item['filename']}: {item['url']}")
 
     return "\n".join(lines)
 
@@ -82,14 +92,14 @@ def main():
         sys.exit(1)
 
     collector_report = load_json("collector_report.json")
-    drive_report = load_json("drive_report.json")
+    release_report = load_json("github_release_report.json")
 
-    total_failed = (collector_report or {}).get("failed", 0) + (drive_report or {}).get("failed", 0)
-    ok = collector_report is not None and drive_report is not None and total_failed == 0
+    total_failed = (collector_report or {}).get("failed", 0) + (release_report or {}).get("failed", 0)
+    ok = collector_report is not None and release_report is not None and total_failed == 0
     status = "OK" if ok else "DIKKAT"
 
     subject = f"[Prospekt Collector] {status} - {datetime.now(TR_TZ).strftime('%d-%m-%Y')}"
-    body = build_body(collector_report, drive_report)
+    body = build_body(collector_report, release_report)
 
     msg = MIMEText(body, "plain", "utf-8")
     msg["Subject"] = subject

@@ -33,14 +33,12 @@ jobs:
       - name: Run collector
         run: python collector.py
 
-      - name: Upload PDFs to Google Drive
+      - name: Upload PDFs to GitHub Release
         if: always()
         env:
-          GDRIVE_OAUTH_CLIENT_ID: ${{ secrets.GDRIVE_OAUTH_CLIENT_ID }}
-          GDRIVE_OAUTH_CLIENT_SECRET: ${{ secrets.GDRIVE_OAUTH_CLIENT_SECRET }}
-          GDRIVE_OAUTH_REFRESH_TOKEN: ${{ secrets.GDRIVE_OAUTH_REFRESH_TOKEN }}
-          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
-        run: python upload_to_drive.py
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RETENTION_WEEKS: "5"
+        run: python upload_to_github_release.py
 
       - name: Send report email
         if: always()
