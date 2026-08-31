@@ -4,7 +4,7 @@
   "https://src.discounto.de/prospekt/penny_markt/2026-08-17/penny_markt_2026-08-17.pdf": "/home/runner/work/prospekt-collector-cloud/prospekt-collector-cloud/FINAL_PROSPEKTE/PENNY/PENNY_KW34_17-08-2026_22-08-2026.pdf",
   "https://src.discounto.de/prospekt/toom/2026-08-22/toom_2026-08-22.pdf": "/home/runner/work/prospekt-collector-cloud/prospekt-collector-cloud/FINAL_PROSPEKTE/TOOM/TOOM_KW35_22-08-2026_28-08-2026.pdf",
   "https://src.discounto.de/prospekt/bauhaus/2026-06-30/bauhaus_2026-06-30.pdf": "/home/runner/work/prospekt-collector-cloud/prospekt-collector-cloud/FINAL_PROSPEKTE/BAUHAUS/BAUHAUS_KW35_30-06-2026_31-12-2026.pdf",
-  "https://src.discounto.de/prospekt/obi/2026-08-01/obi_2026-08-01.pdf": "/home/runner/work/prospekt-collector-cloud/prospekt-collector-cloud/FINAL_PROSPEKTE/OBI/OBI_KW35_01-08-2026_31-08-2026.pdf",
+  "https://src.discounto.de/prospekt/obi/2026-08-01/obi_2026-08-01.pdf": "/home/runner/work/prospekt-collector-cloud/prospekt-collector-cloud/FINAL_PROSPEKTE/OBI/OBI_KW36_01-08-2026_31-08-2026.pdf",
   "https://src.discounto.de/prospekt/norma/2026-08-17/norma_2026-08-17.pdf": "/home/runner/work/prospekt-collector-cloud/prospekt-collector-cloud/FINAL_PROSPEKTE/NORMA/NORMA_KW34_17-08-2026_22-08-2026.pdf",
   "https://src.discounto.de/prospekt/aldi/2026-08-17/aldi_2026-08-17.pdf": "/home/runner/work/prospekt-collector-cloud/prospekt-collector-cloud/FINAL_PROSPEKTE/ALDI-NORD/ALDI-NORD_KW34_17-08-2026_22-08-2026.pdf",
   "https://src.discounto.de/prospekt/aldi_sued/2026-08-17-1/aldi_sued_2026-08-17.pdf": "/home/runner/work/prospekt-collector-cloud/prospekt-collector-cloud/FINAL_PROSPEKTE/ALDI-SUD/ALDI-SUD_KW34_17-08-2026_22-08-2026.pdf",
@@ -13,5 +13,13 @@
   "https://src.discounto.de/prospekt/penny_markt/2026-08-24/penny_markt_2026-08-24.pdf": "/home/runner/work/prospekt-collector-cloud/prospekt-collector-cloud/FINAL_PROSPEKTE/PENNY/PENNY_KW35_24-08-2026_29-08-2026.pdf",
   "https://src.discounto.de/prospekt/norma/2026-08-24/norma_2026-08-24.pdf": "/home/runner/work/prospekt-collector-cloud/prospekt-collector-cloud/FINAL_PROSPEKTE/NORMA/NORMA_KW35_24-08-2026_29-08-2026.pdf",
   "https://src.discounto.de/prospekt/aldi/2026-08-24/aldi_2026-08-24.pdf": "/home/runner/work/prospekt-collector-cloud/prospekt-collector-cloud/FINAL_PROSPEKTE/ALDI-NORD/ALDI-NORD_KW35_24-08-2026_29-08-2026.pdf",
-  "https://src.discounto.de/prospekt/aldi_sued/2026-08-24-1/aldi_sued_2026-08-24.pdf": "/home/runner/work/prospekt-collector-cloud/prospekt-collector-cloud/FINAL_PROSPEKTE/ALDI-SUD/ALDI-SUD_KW35_24-08-2026_29-08-2026.pdf"
+  "https://src.discounto.de/prospekt/aldi_sued/2026-08-24-1/aldi_sued_2026-08-24.pdf": "/home/runner/work/prospekt-collector-cloud/prospekt-collector-cloud/FINAL_PROSPEKTE/ALDI-SUD/ALDI-SUD_KW35_24-08-2026_29-08-2026.pdf",
+  "https://src.discounto.de/prospekt/lidl/2026-08-31-1/lidl_2026-08-31.pdf": "/home/runner/work/prospekt-collector-cloud/prospekt-collector-cloud/FINAL_PROSPEKTE/LIDL/LIDL_KW36_31-08-2026_05-09-2026.pdf",
+  "https://src.discounto.de/prospekt/netto-marken-discount/2026-08-31/netto-marken-discount_2026-08-31.pdf": "/home/runner/work/prospekt-collector-cloud/prospekt-collector-cloud/FINAL_PROSPEKTE/NETTO/NETTO_KW36_31-08-2026_05-09-2026.pdf",
+  "https://src.discounto.de/prospekt/penny_markt/2026-08-31/penny_markt_2026-08-31.pdf": "/home/runner/work/prospekt-collector-cloud/prospekt-collector-cloud/FINAL_PROSPEKTE/PENNY/PENNY_KW36_31-08-2026_05-09-2026.pdf",
+  "https://src.discounto.de/prospekt/toom/2026-08-31/toom_2026-08-31.pdf": "/home/runner/work/prospekt-collector-cloud/prospekt-collector-cloud/FINAL_PROSPEKTE/TOOM/TOOM_KW36_31-08-2026_12-09-2026.pdf",
+  "https://src.discounto.de/prospekt/bauhaus/2026-08-29/bauhaus_2026-08-29.pdf": "/home/runner/work/prospekt-collector-cloud/prospekt-collector-cloud/FINAL_PROSPEKTE/BAUHAUS/BAUHAUS_KW36_29-08-2026_12-09-2026.pdf",
+  "https://src.discounto.de/prospekt/norma/2026-08-31/norma_2026-08-31.pdf": "/home/runner/work/prospekt-collector-cloud/prospekt-collector-cloud/FINAL_PROSPEKTE/NORMA/NORMA_KW36_31-08-2026_05-09-2026.pdf",
+  "https://src.discounto.de/prospekt/aldi/2026-08-31/aldi_2026-08-31.pdf": "/home/runner/work/prospekt-collector-cloud/prospekt-collector-cloud/FINAL_PROSPEKTE/ALDI-NORD/ALDI-NORD_KW36_31-08-2026_05-09-2026.pdf",
+  "https://src.discounto.de/prospekt/aldi_sued/2026-08-31-1/aldi_sued_2026-08-31.pdf": "/home/runner/work/prospekt-collector-cloud/prospekt-collector-cloud/FINAL_PROSPEKTE/ALDI-SUD/ALDI-SUD_KW36_31-08-2026_05-09-2026.pdf"
 }
