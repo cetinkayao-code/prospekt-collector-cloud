@@ -42,18 +42,46 @@ def api_headers(token):
     }
 
 
-def create_release(repo, token, tag, title, body):
-    resp = requests.post(
-        f"{API_ROOT}/repos/{repo}/releases",
+def get_release_by_tag(repo, token, tag):
+    resp = requests.get(
+        f"{API_ROOT}/repos/{repo}/releases/tags/{tag}",
         headers=api_headers(token),
-        json={"tag_name": tag, "name": title, "body": body},
         timeout=30,
     )
     resp.raise_for_status()
     return resp.json()
 
 
-def upload_asset(upload_url_template, token, asset_name, path):
+def create_or_reuse_release(repo, token, tag, title, body):
+    """Aynı gün workflow elle tekrar tetiklenirse (örn. bir hatadan sonra retry)
+    o günün release'i zaten var olabilir - bu durumda hata vermek yerine
+    var olan release'i yeniden kullanırız."""
+    resp = requests.post(
+        f"{API_ROOT}/repos/{repo}/releases",
+        headers=api_headers(token),
+        json={"tag_name": tag, "name": title, "body": body},
+        timeout=30,
+    )
+    if resp.status_code == 422:
+        return get_release_by_tag(repo, token, tag)
+    resp.raise_for_status()
+    return resp.json()
+
+
+def delete_asset(repo, token, asset_id):
+    requests.delete(
+        f"{API_ROOT}/repos/{repo}/releases/assets/{asset_id}",
+        headers=api_headers(token),
+        timeout=30,
+    )
+
+
+def upload_asset(repo, upload_url_template, token, asset_name, path, existing_assets):
+    """existing_assets: {asset_name: asset_id} - aynı isimde asset zaten varsa
+    (örn. aynı gün retry), önce silip yeniden yükler."""
+    if asset_name in existing_assets:
+        delete_asset(repo, token, existing_assets[asset_name])
+
     upload_url = upload_url_template.split("{")[0]
     headers = api_headers(token)
     headers["Content-Type"] = "application/pdf"
@@ -144,14 +172,16 @@ def main():
         print("Yüklenecek PDF yok, release oluşturulmadı.")
     else:
         try:
-            release = create_release(repo, token, tag, title, f"{pdf_count} PDF - otomatik yükleme")
+            release = create_or_reuse_release(repo, token, tag, title, f"{pdf_count} PDF - otomatik yükleme")
             release_url = release["html_url"]
             upload_url_template = release["upload_url"]
+            existing_assets = {a["name"]: a["id"] for a in release.get("assets", [])}
         except Exception as e:
             print(f"RELEASE OLUŞTURMA HATASI: {e}")
             failed += pdf_count
             failed_files.append(f"release oluşturulamadı: {type(e).__name__}: {e}")
             upload_url_template = None
+            existing_assets = {}
 
         if upload_url_template:
             for brand_dir in brand_dirs:
@@ -160,7 +190,7 @@ def main():
                     asset_name = f"{brand_dir.name}__{pdf.name}"
                     try:
                         print(f"[{brand_dir.name}] YÜKLENİYOR: {pdf.name}")
-                        asset = upload_asset(upload_url_template, token, asset_name, pdf)
+                        asset = upload_asset(repo, upload_url_template, token, asset_name, pdf, existing_assets)
                         uploaded += 1
                         downloads.append({
                             "brand": brand_dir.name,
