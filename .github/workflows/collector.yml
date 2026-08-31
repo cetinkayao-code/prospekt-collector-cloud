@@ -3,8 +3,10 @@ name: Prospekt Collector
 on:
   workflow_dispatch:
   schedule:
-    # Her Pazartesi 09:00 UTC = 12:00 Türkiye saati (TR yıl boyu UTC+3, DST yok)
-    - cron: "0 9 * * 1"
+    # Her Pazartesi 09:07 UTC = 12:07 Türkiye saati (TR yıl boyu UTC+3, DST yok)
+    # Not: dakika 00 yerine 07 seçildi - GitHub Actions saat başlarında yoğun olduğu için
+    # tam saat başına denk gelen scheduled run'lar sessizce atlanabiliyor.
+    - cron: "7 9 * * 1"
 
 permissions:
   contents: write
