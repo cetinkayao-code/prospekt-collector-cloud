@@ -113,12 +113,39 @@ def main():
     msg["From"] = gmail_address
     msg["To"] = report_to
 
-    with smtplib.SMTP("smtp.gmail.com", 587) as server:
-        server.starttls()
-        server.login(gmail_address, gmail_password)
-        server.sendmail(gmail_address, [report_to], msg.as_string())
+    # Teşhis (repo herkese açık: şifre/adres yazdırılmaz, sadece uzunluk ve alan adı)
+    print(f"Teşhis: adres alan adı={gmail_address.split('@')[-1]}, "
+          f"şifre uzunluğu={len(gmail_password)}, boşluk içeriyor mu={' ' in gmail_password}")
 
-    print(f"Rapor gönderildi: {report_to}")
+    def send_starttls():
+        with smtplib.SMTP("smtp.gmail.com", 587, timeout=30) as server:
+            server.starttls()
+            server.login(gmail_address, gmail_password)
+            server.sendmail(gmail_address, [report_to], msg.as_string())
+
+    def send_ssl():
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=30) as server:
+            server.login(gmail_address, gmail_password)
+            server.sendmail(gmail_address, [report_to], msg.as_string())
+
+    sent = False
+    for name, fn in (("587/STARTTLS", send_starttls), ("465/SSL", send_ssl)):
+        for attempt in (1, 2):
+            try:
+                fn()
+                print(f"Rapor gönderildi ({name}, deneme {attempt}): {report_to}")
+                sent = True
+                break
+            except smtplib.SMTPAuthenticationError as e:
+                print(f"[{name} deneme {attempt}] Kimlik doğrulama reddedildi: {e.smtp_code} {e.smtp_error!r}")
+                break  # şifre yanlışsa tekrar denemek anlamsız
+            except Exception as e:
+                print(f"[{name} deneme {attempt}] {type(e).__name__}: {e}")
+        if sent:
+            break
+
+    if not sent:
+        sys.exit(1)
 
 
 if __name__ == "__main__":
