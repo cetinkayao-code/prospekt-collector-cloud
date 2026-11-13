@@ -12,7 +12,7 @@ PENNY      -> Discounto
 TOOM       -> Discounto
 BAUHAUS    -> Discounto
 OBI        -> Discounto
-ACTION     -> Action'ın kendi sitesi (de.publications.action.com, Publitas)
+ACTION     -> Action'ın kendi sitesi (de.publications.action.com, sayfa görüntülerinden PDF)
 
 Mantık:
 - Discounto marka sayfasını açar.
@@ -26,11 +26,13 @@ Mantık:
 
 from pathlib import Path
 from datetime import datetime, date, timedelta
+import io
 import os
 import re
 import json
 import requests
 from urllib.parse import urljoin
+from PIL import Image
 from playwright.sync_api import sync_playwright
 
 # Repo-relative çıktı klasörü: hem yerelde hem GitHub Actions runner'ında
@@ -577,10 +579,32 @@ def collect_brand(page, brand, manifest):
     return "download"
 
 
-# action.com/de-de/prospekt/ sayfasındaki broşür bu adresten gömülür.
-# Adres güncel haftaya yönlenir (ör. /action-week-46-2026/) ve HTML'de
-# hazır PDF linki (downloadPdfUrl) bulunur; tarayıcı gerekmez.
+# action.com/de-de/prospekt/ sayfasındaki broşür bu adresten gömülür (Publitas).
+# Adres güncel haftaya yönlenir (ör. /action-week-46-2026/).
+# Not: sitenin sunduğu PDF (downloadPdfUrl) yalnız boş sayfa şablonunu içeriyor;
+# ürünler tarayıcıda sonradan yerleştiriliyor. Bu yüzden PDF'i, Publitas'ın her
+# sayfa için hazırladığı tam görüntülerden (spreads.json -> screenshots) kendimiz kuruyoruz.
 ACTION_URL = "https://de.publications.action.com/"
+ACTION_HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/151.0.0.0 Safari/537.36"
+    ),
+    "Accept-Language": "de-DE",
+}
+
+
+def fetch_page_image(url):
+    # Sayfa görüntüsü istek anında üretiliyor; ara sıra geç cevap gelebilir.
+    for attempt in range(3):
+        try:
+            r = requests.get(url, headers=ACTION_HEADERS, timeout=90)
+            r.raise_for_status()
+            return Image.open(io.BytesIO(r.content)).convert("RGB")
+        except Exception:
+            if attempt == 2:
+                raise
 
 
 def collect_action(manifest):
@@ -588,44 +612,26 @@ def collect_action(manifest):
     print("=" * 70)
     print(f"[{brand}] {ACTION_URL}")
 
-    r = requests.get(
-        ACTION_URL,
-        headers={
-            "User-Agent": (
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/151.0.0.0 Safari/537.36"
-            ),
-            "Accept-Language": "de-DE",
-        },
-        timeout=60,
-    )
+    r = requests.get(ACTION_URL, headers=ACTION_HEADERS, timeout=60)
     r.raise_for_status()
 
-    m = re.search(r"action-week-(\d{1,2})-(\d{4})", r.url) or re.search(
-        r'"slug":"action-week-(\d{1,2})-(\d{4})"', r.text
-    )
+    m = re.search(r"action-week-(\d{1,2})-(\d{4})", r.url)
     if not m:
         raise RuntimeError(f"Hafta bilgisi bulunamadı. URL: {r.url}")
     week, year = int(m.group(1)), int(m.group(2))
-
-    pm = re.search(r'"downloadPdfUrl":"([^"]+)"', r.text)
-    if not pm:
-        raise RuntimeError("Sayfada PDF linki (downloadPdfUrl) bulunamadı.")
-    pdf_url = pm.group(1).replace("\\u0026", "&").replace("\\/", "/")
+    pub_url = r.url if r.url.endswith("/") else r.url + "/"
 
     # Action broşür haftası Çarşamba başlar, Salı biter.
     start = date.fromisocalendar(year, week, 3)
     end = start + timedelta(days=6)
 
     print(f"[{brand}] CURRENT: KW{week:02d} {year}")
-    print(f"[{brand}] PDF: {pdf_url}")
 
     filename = f"{brand}_KW{week:02d}_{start:%d-%m-%Y}_{end:%d-%m-%Y}.pdf"
     (OUTPUT_DIR / brand).mkdir(parents=True, exist_ok=True)
     dest = OUTPUT_DIR / brand / filename
 
-    key = pdf_url.split("?", 1)[0].lower()
+    key = pub_url.lower()
 
     old = manifest.get(key)
     if old and is_valid_pdf(Path(old)):
@@ -637,10 +643,25 @@ def collect_action(manifest):
         print(f"  ZATEN VAR: {dest.name}")
         return "skip"
 
-    size = download_pdf(pdf_url, dest, referer=r.url)
+    sr = requests.get(pub_url + "spreads.json", headers=ACTION_HEADERS, timeout=60)
+    sr.raise_for_status()
+    pages = sorted((p for s in sr.json() for p in s["pages"]), key=lambda p: p["number"])
+    if not pages:
+        raise RuntimeError("spreads.json içinde sayfa yok.")
+
+    images = []
+    for p in pages:
+        src = (p.get("screenshots") or p["images"])["at1600"]
+        images.append(fetch_page_image(urljoin("https://view.publitas.com", src)))
+    print(f"[{brand}] {len(images)} sayfa görüntüsü alındı")
+
+    tmp = dest.with_suffix(".part")
+    images[0].save(tmp, "PDF", save_all=True, append_images=images[1:],
+                   resolution=150, quality=85)
+    tmp.replace(dest)
     manifest[key] = str(dest)
 
-    print(f"  İNDİRİLDİ: {size / 1024 / 1024:.2f} MB")
+    print(f"  OLUŞTURULDU: {dest.stat().st_size / 1024 / 1024:.2f} MB")
     print(f"  DOSYA: {dest}")
 
     return "download"
