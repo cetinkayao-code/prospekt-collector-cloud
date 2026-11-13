@@ -4,7 +4,7 @@
 
 ## Ne yapıyor
 
-`collector.py`, 9 Alman market/market zinciri markasının (LIDL, NETTO, PENNY, TOOM, BAUHAUS, OBI, NORMA, ALDI-NORD, ALDI-SUD) Discounto.de üzerindeki güncel haftalık broşürünü bulur ve PDF olarak `FINAL_PROSPEKTE/<marka>/` altına indirir. Daha önce indirilmiş bir broşür tekrar indirilmez (`collector_manifest_v16.json` ile takip edilir).
+`collector.py`, 9 Alman market/market zinciri markasının (LIDL, NETTO, PENNY, TOOM, BAUHAUS, OBI, NORMA, ALDI-NORD, ALDI-SUD) Discounto.de üzerindeki güncel haftalık broşürünü bulur ve PDF olarak `FINAL_PROSPEKTE/<marka>/` altına indirir. ACTION ise Discounto'dan değil, Action'ın kendi broşür sitesinden (`de.publications.action.com`, `action.com/de-de/prospekt/` sayfasına gömülü olan) hazır PDF olarak alınır; Action broşürü Çarşamba başlar, Pazartesi çalışmasında o hafta biten broşür gelir. Daha önce indirilmiş bir broşür tekrar indirilmez (`collector_manifest_v16.json` ile takip edilir).
 
 ## Otomasyon
 

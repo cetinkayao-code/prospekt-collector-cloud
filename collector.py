@@ -12,6 +12,7 @@ PENNY      -> Discounto
 TOOM       -> Discounto
 BAUHAUS    -> Discounto
 OBI        -> Discounto
+ACTION     -> Action'ın kendi sitesi (de.publications.action.com, Publitas)
 
 Mantık:
 - Discounto marka sayfasını açar.
@@ -24,7 +25,7 @@ Mantık:
 """
 
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, date, timedelta
 import os
 import re
 import json
@@ -576,6 +577,75 @@ def collect_brand(page, brand, manifest):
     return "download"
 
 
+# action.com/de-de/prospekt/ sayfasındaki broşür bu adresten gömülür.
+# Adres güncel haftaya yönlenir (ör. /action-week-46-2026/) ve HTML'de
+# hazır PDF linki (downloadPdfUrl) bulunur; tarayıcı gerekmez.
+ACTION_URL = "https://de.publications.action.com/"
+
+
+def collect_action(manifest):
+    brand = "ACTION"
+    print("=" * 70)
+    print(f"[{brand}] {ACTION_URL}")
+
+    r = requests.get(
+        ACTION_URL,
+        headers={
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/151.0.0.0 Safari/537.36"
+            ),
+            "Accept-Language": "de-DE",
+        },
+        timeout=60,
+    )
+    r.raise_for_status()
+
+    m = re.search(r"action-week-(\d{1,2})-(\d{4})", r.url) or re.search(
+        r'"slug":"action-week-(\d{1,2})-(\d{4})"', r.text
+    )
+    if not m:
+        raise RuntimeError(f"Hafta bilgisi bulunamadı. URL: {r.url}")
+    week, year = int(m.group(1)), int(m.group(2))
+
+    pm = re.search(r'"downloadPdfUrl":"([^"]+)"', r.text)
+    if not pm:
+        raise RuntimeError("Sayfada PDF linki (downloadPdfUrl) bulunamadı.")
+    pdf_url = pm.group(1).replace("\\u0026", "&").replace("\\/", "/")
+
+    # Action broşür haftası Çarşamba başlar, Salı biter.
+    start = date.fromisocalendar(year, week, 3)
+    end = start + timedelta(days=6)
+
+    print(f"[{brand}] CURRENT: KW{week:02d} {year}")
+    print(f"[{brand}] PDF: {pdf_url}")
+
+    filename = f"{brand}_KW{week:02d}_{start:%d-%m-%Y}_{end:%d-%m-%Y}.pdf"
+    (OUTPUT_DIR / brand).mkdir(parents=True, exist_ok=True)
+    dest = OUTPUT_DIR / brand / filename
+
+    key = pdf_url.split("?", 1)[0].lower()
+
+    old = manifest.get(key)
+    if old and is_valid_pdf(Path(old)):
+        print(f"  ZATEN VAR: {Path(old).name}")
+        return "skip"
+
+    if is_valid_pdf(dest):
+        manifest[key] = str(dest)
+        print(f"  ZATEN VAR: {dest.name}")
+        return "skip"
+
+    size = download_pdf(pdf_url, dest, referer=r.url)
+    manifest[key] = str(dest)
+
+    print(f"  İNDİRİLDİ: {size / 1024 / 1024:.2f} MB")
+    print(f"  DOSYA: {dest}")
+
+    return "download"
+
+
 def main():
     print("=" * 70)
     print("FINAL PROSPEKT COLLECTOR v1.7")
@@ -615,6 +685,17 @@ def main():
             print()
 
         browser.close()
+
+    try:
+        result = collect_action(manifest)
+        if result == "download":
+            downloaded += 1
+        elif result == "skip":
+            skipped += 1
+    except Exception as e:
+        failed += 1
+        failed_brands.append(f"ACTION: {type(e).__name__}: {e}")
+        print(f"[ACTION] HATA: {type(e).__name__}: {e}")
 
     save_manifest(manifest)
 
